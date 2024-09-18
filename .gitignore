@@ -1,0 +1,12 @@
+venv/
+checkpoints/
+datasets/
+output/
+.vscode/
+.vs/
+.venv/
+__pycache__/
+**/__pycache__/
+*.log
+.env
+.pyenv
