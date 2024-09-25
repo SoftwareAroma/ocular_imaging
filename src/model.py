@@ -1,3 +1,4 @@
+from src.utils import calculate_fid, calculate_inception_score, get_inception_model
 import torch
 import torch.nn as nn
 from torchsummary import summary
@@ -158,5 +159,5 @@ class TripleGAN(nn.Module):
         c_loss.backward()
         self.optimizer_C.step()
 
-        return d_loss, g_loss, c_loss
+        return d_loss, g_loss, c_loss, fake_images
     

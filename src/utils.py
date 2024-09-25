@@ -5,11 +5,56 @@ from torch.utils.data import TensorDataset
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+from pytorch_fid import fid_score
+from torchvision.models import inception_v3
+
+
+def get_inception_model(
+    device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'), 
+    pretrained=True, 
+    transform_input=False
+):
+    # Initialize InceptionV3 model for IS and FID calculation
+    inception_model = inception_v3(pretrained=pretrained, transform_input=transform_input).to(device)
+    inception_model.eval()
+    return inception_model
+
+
+# Function to calculate Inception Score
+def calculate_inception_score(inception_model, gen_imgs, splits=10):
+    with torch.no_grad():
+        pred = inception_model(gen_imgs)
+        pred = torch.nn.functional.softmax(pred, dim=1).cpu().numpy()
+        split_scores = []
+
+        for k in range(splits):
+            part = pred[k * (pred.shape[0] // splits): (k + 1) * (pred.shape[0] // splits), :]
+            kl = part * (np.log(part) - np.log(np.expand_dims(np.mean(part, 0), 0)))
+            kl = np.mean(np.sum(kl, 1))
+            split_scores.append(np.exp(kl))
+
+        return np.mean(split_scores), np.std(split_scores)
+
+
+# Function to calculate FID
+def calculate_fid(
+    real_imgs, 
+    gen_imgs,  
+    batch_size=64, 
+    device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+):
+    fid_value = fid_score.calculate_fid_given_paths(
+        [real_imgs, gen_imgs], 
+        batch_size=batch_size, 
+        device=device, 
+        dims=2048
+    )
+    return fid_value
+
 
 def get_last_checkpoint(directory):
     # List all files in the directory
     files = os.listdir(directory)
-
     # Filter out the checkpoint files and extract their epoch numbers
     checkpoint_files = []
     for file in files:
@@ -17,18 +62,16 @@ def get_last_checkpoint(directory):
         if match:
             epoch = int(match.group(1))
             checkpoint_files.append((epoch, file))
-
     if not checkpoint_files:
         return None  # No checkpoint files found
-
     # Sort by epoch number and return the last one
     checkpoint_files.sort(key=lambda x: x[0])
-    
     last_epoch_file = os.path.join(directory, checkpoint_files[-1][1])
     # get the epoch number from the last checkpoint file
     last_epoch = checkpoint_files[-1][0]
-
     return last_epoch_file, last_epoch
+
+
 
 def show_generated_images(images, n_images=8):
     plt.figure(figsize=(10, 10))
