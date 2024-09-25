@@ -5,51 +5,7 @@ from torch.utils.data import TensorDataset
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-from pytorch_fid import fid_score
-from torchvision.models import inception_v3
-
-
-def get_inception_model(
-    device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'), 
-    pretrained=True, 
-    transform_input=False
-):
-    # Initialize InceptionV3 model for IS and FID calculation
-    inception_model = inception_v3(pretrained=pretrained, transform_input=transform_input).to(device)
-    inception_model.eval()
-    return inception_model
-
-
-# Function to calculate Inception Score
-def calculate_inception_score(inception_model, gen_imgs, splits=10):
-    with torch.no_grad():
-        pred = inception_model(gen_imgs)
-        pred = torch.nn.functional.softmax(pred, dim=1).cpu().numpy()
-        split_scores = []
-
-        for k in range(splits):
-            part = pred[k * (pred.shape[0] // splits): (k + 1) * (pred.shape[0] // splits), :]
-            kl = part * (np.log(part) - np.log(np.expand_dims(np.mean(part, 0), 0)))
-            kl = np.mean(np.sum(kl, 1))
-            split_scores.append(np.exp(kl))
-
-        return np.mean(split_scores), np.std(split_scores)
-
-
-# Function to calculate FID
-def calculate_fid(
-    real_imgs, 
-    gen_imgs,  
-    batch_size=64, 
-    device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-):
-    fid_value = fid_score.calculate_fid_given_paths(
-        [real_imgs, gen_imgs], 
-        batch_size=batch_size, 
-        device=device, 
-        dims=2048
-    )
-    return fid_value
+from torch.utils.data import Dataset
 
 
 def get_last_checkpoint(directory):
@@ -93,6 +49,43 @@ def save_images(images, output_path, n_images):
         img = Image.fromarray(img)
         img.save(os.path.join(output_path, f'image_{i+1}.png'))
     print(f"Images saved to {output_path}")
+    
+    
+class FundusDataset(Dataset):
+    def __init__(self, root_dir, transform=None):
+        self.root_dir = root_dir
+        self.transform = transform
+        
+        # Store image paths and corresponding labels
+        self.images = []
+        self.labels = []
+        self.class_to_idx = {}  # Dictionary to map folder names to numerical labels
+        
+        # Traverse the root directory and subdirectories
+        for subdir, _, files in os.walk(root_dir):
+            class_name = os.path.basename(subdir)
+            if class_name not in self.class_to_idx and len(files) > 0:  # Assign new label if not already assigned
+                self.class_to_idx[class_name] = len(self.class_to_idx)  # Assign a new class index
+            
+            # Collect image paths and labels
+            for file in files:
+                if file.endswith(('.png', '.jpg', '.jpeg')):  # Only consider valid image files
+                    self.images.append(os.path.join(subdir, file))
+                    self.labels.append(self.class_to_idx[class_name])  # Add corresponding label for the image
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        img_name = self.images[idx]
+        label = self.labels[idx]
+        
+        image = Image.open(img_name).convert('RGB')
+        
+        if self.transform:
+            image = self.transform(image)
+        
+        return image, label  # Return both the image and label
     
     
 def load_dataset(root_dir, image_size) -> any:
@@ -185,8 +178,10 @@ def plot_losses(g_losses, d_losses, c_losses, output_path=None,):
 def plot_metrics(inception_scores, fid_values, output_path=None):
     # Plot the Inception Scores and FID values
     plt.figure(figsize=(10, 5))
-    plt.plot(inception_scores, label="Inception Score")
-    plt.plot(fid_values, label="FID")
+    if inception_scores:
+        plt.plot(inception_scores, label="Inception Score")
+    if fid_values:
+        plt.plot(fid_values, label="FID")
     plt.legend()
     plt.title("Inception Score and FID")
     # save the image to the output path

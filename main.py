@@ -1,10 +1,11 @@
 import os
 import torch
 import pandas as pd
+import numpy as np
 from torch.utils.data import DataLoader
 from src.networks import Generator, Discriminator, Classifier
 from src.model import TripleGAN
-from src.utils import calculate_fid, calculate_inception_score, get_inception_model, load_dataset, plot_losses, plot_metrics, save_images, get_last_checkpoint
+from src.utils import FundusDataset, load_dataset, plot_losses, plot_metrics, save_images, get_last_checkpoint
 from default_networks import (
     get_default_classifier_layers,
     get_default_disc_layers,
@@ -12,24 +13,71 @@ from default_networks import (
 )
 from options import parse_args
 import warnings
+from torchvision.models import inception_v3
+from pytorch_fid import fid_score
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from torchvision.utils import save_image
+
+
 warnings.filterwarnings("ignore")
 
 os.environ['TORCH_HOME'] = './pre-trained/' #setting the environment variable
 
+device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    
+inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
+inception_model.eval()
+
+
+# Function to calculate Inception Score
+def calculate_inception_score(gen_imgs, splits=10):
+    with torch.no_grad():
+        pred = inception_model(gen_imgs)
+        pred = torch.nn.functional.softmax(pred, dim=1).cpu().numpy()
+        split_scores = []
+
+        for k in range(splits):
+            part = pred[k * (pred.shape[0] // splits): (k + 1) * (pred.shape[0] // splits), :]
+            kl = part * (np.log(part) - np.log(np.expand_dims(np.mean(part, 0), 0)))
+            kl = np.mean(np.sum(kl, 1))
+            split_scores.append(np.exp(kl))
+
+        return np.mean(split_scores), np.std(split_scores)
+
+
+# Function to calculate FID
+def calculate_fid(real_imgs, gen_imgs, batch_size=64):
+    fid_value = fid_score.calculate_fid_given_paths(
+        [real_imgs, gen_imgs], 
+        batch_size=batch_size, 
+        device=device, dims=2048
+    )
+    return fid_value
+
 # Function to train or test the model
 def train_or_test(options):
+    
     if options.train:
+        # Image preprocessing
+        transform = transforms.Compose([
+            transforms.Resize((options.image_size, options.image_size)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.5], [0.5])
+        ])
         print("Loading dataset...")
-        dataset = load_dataset(
-            options.root_dir,
-            options.image_size
-        )
+        # dataset = load_dataset(
+        #     options.root_dir,
+        #     options.image_size
+        # )
+        dataset = FundusDataset(options.root_dir, transform=transform)
         print(f"Dataset loaded...") # {len(dataset)} images
-        dataloader = DataLoader(
-            dataset, 
-            batch_size=options.batch_size, 
-            shuffle=True
-        )
+        # dataloader = DataLoader(
+        #     dataset, 
+        #     batch_size=options.batch_size, 
+        #     shuffle=True
+        # )
+        dataloader = DataLoader(dataset, batch_size=options.batch_size, shuffle=True)
     else:
         print("Preparing model for testing")
 
@@ -85,7 +133,6 @@ def train_or_test(options):
         latent_dim=options.latent_dim
     )
     
-    inception_model=get_inception_model(),
     
     g_losses = []
     d_losses = []
@@ -103,13 +150,13 @@ def train_or_test(options):
                 c_losses.append(c_loss.item())
                 
             # Calculate metrics
-            inception_score, _ = calculate_inception_score(inception_model, fake_images)
-            fid_value = calculate_fid(imgs, fake_images)
+            inception_score, _ = calculate_inception_score(fake_images)
+            # fid_value = calculate_fid(imgs, fake_images, options.batch_size)
             inception_scores.append(inception_score)
-            fid_values.append(fid_value)
+            # fid_values.append(fid_value)
 
-            print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}")
-            print(f"Inception Score: {inception_score} FID: {fid_value}")
+            print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}, Inception Score: {inception_score}")
+            # print(f"Inception Score: {inception_score} FID: {fid_value}")
             # create the checkpoint directory if it does not exist
             if not os.path.exists(options.checkpoint_dir):
                 os.makedirs(options.checkpoint_dir)
@@ -139,13 +186,13 @@ def train_or_test(options):
                     c_losses.append(c_loss.item())
                     
                 # Calculate metrics
-                inception_score, _ = calculate_inception_score(inception_model, fake_images)
-                fid_value = calculate_fid(imgs, fake_images)
+                inception_score, _ = calculate_inception_score(fake_images)
+                # fid_value = calculate_fid(imgs, fake_images, options.batch_size)
                 inception_scores.append(inception_score)
-                fid_values.append(fid_value)
+                # fid_values.append(fid_value)
 
-                print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}")
-                print(f"Inception Score: {inception_score} FID: {fid_value}")
+                print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}, Inception Score: {inception_score}")
+                # print(f"Inception Score: {inception_score} FID: {fid_value}")
                 # TODO: uncomment the following lines before training if you want to save the model checkpoints
                 # if epoch % 100 == 0:
                 #     checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')

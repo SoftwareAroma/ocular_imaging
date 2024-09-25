@@ -1,6 +1,7 @@
 venv/
 checkpoints/
 datasets/
+pre-trained/
 output/
 .vscode/
 .vs/
