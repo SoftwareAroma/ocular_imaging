@@ -165,3 +165,34 @@ def test_classifier(classifier, generator, dataloader, latent_dim) -> tuple:
     # print(f"Accuracy on generated (fake) images: {fake_accuracy:.2f}%")
     
     return real_accuracy, fake_accuracy
+
+
+def plot_losses(g_losses, d_losses, c_losses, output_path=None,):
+    # Plot the losses
+    plt.figure(figsize=(10, 5))
+    plt.plot(g_losses, label="Generator Loss")
+    plt.plot(d_losses, label="Discriminator Loss")
+    plt.plot(c_losses, label="Classifier Loss")
+    plt.legend()
+    plt.title("Losses")
+    # save image to the output path
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    if output_path:
+        plt.savefig(os.path.join(output_path, "losses.png"))
+    # plt.show()
+
+def plot_metrics(inception_scores, fid_values, output_path=None):
+    # Plot the Inception Scores and FID values
+    plt.figure(figsize=(10, 5))
+    plt.plot(inception_scores, label="Inception Score")
+    plt.plot(fid_values, label="FID")
+    plt.legend()
+    plt.title("Inception Score and FID")
+    # save the image to the output path
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    if output_path:
+        plt.savefig(os.path.join(output_path, "metrics.png"))
+    # plt.show()
+

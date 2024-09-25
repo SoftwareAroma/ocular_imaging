@@ -1,9 +1,10 @@
 import os
 import torch
+import pandas as pd
 from torch.utils.data import DataLoader
 from src.networks import Generator, Discriminator, Classifier
 from src.model import TripleGAN
-from src.utils import calculate_fid, calculate_inception_score, get_inception_model, load_dataset, save_images, get_last_checkpoint
+from src.utils import calculate_fid, calculate_inception_score, get_inception_model, load_dataset, plot_losses, plot_metrics, save_images, get_last_checkpoint
 from default_networks import (
     get_default_classifier_layers,
     get_default_disc_layers,
@@ -156,6 +157,20 @@ def train_or_test(options):
         images = gan_model.generate_images(options.n_images)
         save_images(images, options.output_path, options.n_images)
         # print(f"images saved to {options.output_dir}")
+        
+    # export the losses and the metrics to a csv file
+    if options.train or options.continue_training:
+        df = pd.DataFrame({
+            'g_losses': g_losses,
+            'd_losses': d_losses,
+            'c_losses': c_losses,
+            'inception_scores': inception_scores,
+            'fid_values': fid_values
+        })
+        df.to_csv(os.path.join(options.output_path, 'metrics.csv'), index=False)
+        
+        plot_losses(g_losses, d_losses, c_losses, options.output_path)
+        plot_metrics(inception_scores, fid_values, options.output_path)
         
 
 if __name__ == '__main__':
