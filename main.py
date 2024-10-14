@@ -1,23 +1,37 @@
 import os
 import torch
-import pandas as pd
+import warnings
+import tempfile
+import shutil
 import numpy as np
+import pandas as pd
 from torch.utils.data import DataLoader
-from src.networks import Generator, Discriminator, Classifier
 from src.model import TripleGAN
-from src.utils import FundusDataset, load_dataset, plot_losses, plot_metrics, save_images, get_last_checkpoint
+from src.networks import (
+    Generator, 
+    Discriminator, 
+    Classifier
+)
+from src.utils import (
+    FundusDataset, 
+    load_dataset, 
+    plot_losses, 
+    plot_metrics, 
+    save_images, 
+    get_last_checkpoint
+)
 from default_networks import (
     get_default_classifier_layers,
     get_default_disc_layers,
     get_default_gen_layers
 )
 from options import parse_args
-import warnings
 from torchvision.models import inception_v3
 from pytorch_fid import fid_score
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.utils import save_image
+
 
 
 warnings.filterwarnings("ignore")
@@ -48,12 +62,38 @@ def calculate_inception_score(gen_imgs, splits=10):
 
 # Function to calculate FID
 def calculate_fid(real_imgs, gen_imgs, batch_size=64):
+    # Create temporary directories
+    real_dir = tempfile.mkdtemp()
+    gen_dir = tempfile.mkdtemp()
+
+    # Save real images
+    for i, img in enumerate(real_imgs):
+        save_image(img, os.path.join(real_dir, f"real_{i}.png"))
+
+    # Save generated images
+    for i, img in enumerate(gen_imgs):
+        save_image(img, os.path.join(gen_dir, f"gen_{i}.png"))
+
+    # Calculate FID
     fid_value = fid_score.calculate_fid_given_paths(
-        [real_imgs, gen_imgs], 
+        [real_dir, gen_dir], 
         batch_size=batch_size, 
         device=device, dims=2048
     )
+
+    # Clean up temporary directories
+    shutil.rmtree(real_dir)
+    shutil.rmtree(gen_dir)
+
     return fid_value
+
+# def calculate_fid(real_imgs, gen_imgs, batch_size=64):
+#     fid_value = fid_score.calculate_fid_given_paths(
+#         [real_imgs, gen_imgs], 
+#         batch_size=batch_size, 
+#         device=device, dims=2048
+#     )
+#     return fid_value
 
 # Function to train or test the model
 def train_or_test(options):
@@ -66,17 +106,8 @@ def train_or_test(options):
             transforms.Normalize([0.5], [0.5])
         ])
         print("Loading dataset...")
-        # dataset = load_dataset(
-        #     options.root_dir,
-        #     options.image_size
-        # )
         dataset = FundusDataset(options.root_dir, transform=transform)
-        print(f"Dataset loaded...") # {len(dataset)} images
-        # dataloader = DataLoader(
-        #     dataset, 
-        #     batch_size=options.batch_size, 
-        #     shuffle=True
-        # )
+        print(f"Dataset loaded...")
         dataloader = DataLoader(dataset, batch_size=options.batch_size, shuffle=True)
     else:
         print("Preparing model for testing")
