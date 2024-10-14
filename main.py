@@ -61,7 +61,7 @@ def calculate_inception_score(gen_imgs, splits=10):
 
 
 # Function to calculate FID
-def calculate_fid(real_imgs, gen_imgs, batch_size=64):
+def calculate_fid(real_imgs, gen_imgs, batch_size=1):
     # Create temporary directories
     real_dir = tempfile.mkdtemp()
     gen_dir = tempfile.mkdtemp()
@@ -182,9 +182,9 @@ def train_or_test(options):
                 
             # Calculate metrics
             inception_score, _ = calculate_inception_score(fake_images)
-            # fid_value = calculate_fid(imgs, fake_images, options.batch_size)
+            fid_value = calculate_fid(imgs, fake_images, options.batch_size)
             inception_scores.append(inception_score)
-            # fid_values.append(fid_value)
+            fid_values.append(fid_value)
 
             print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}, Inception Score: {inception_score}")
             # print(f"Inception Score: {inception_score} FID: {fid_value}")
