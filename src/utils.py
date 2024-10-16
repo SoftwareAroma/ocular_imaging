@@ -69,9 +69,9 @@ class FundusDataset(Dataset):
             
             # Collect image paths and labels
             for file in files:
-                if file.endswith(('.png', '.jpg', '.jpeg')):  # Only consider valid image files
-                    self.images.append(os.path.join(subdir, file))
-                    self.labels.append(self.class_to_idx[class_name])  # Add corresponding label for the image
+                # if file.endswith(('.png', '.jpg', '.jpeg')):  # Only consider valid image files
+                self.images.append(os.path.join(subdir, file))
+                self.labels.append(self.class_to_idx[class_name])  # Add corresponding label for the image
 
     def __len__(self):
         return len(self.images)
@@ -86,6 +86,53 @@ class FundusDataset(Dataset):
             image = self.transform(image)
         
         return image, label  # Return both the image and label
+    
+
+class FundusDatasetOne(Dataset):
+    def __init__(self, root_dir, transform=None, max_images=40000):
+        self.root_dir = root_dir
+        self.transform = transform
+        self.max_images = max_images
+        
+        # Store image paths and corresponding labels
+        self.images = []
+        self.labels = []
+        self.class_to_idx = {}  # Dictionary to map folder names to numerical labels
+
+        # List of possible image file extensions
+        valid_extensions = ('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.webp')
+
+        # Traverse the root directory and subdirectories
+        image_count = 0
+        for subdir, _, files in os.walk(root_dir):
+            class_name = os.path.basename(subdir)
+            if class_name not in self.class_to_idx and len(files) > 0:
+                self.class_to_idx[class_name] = len(self.class_to_idx)
+            
+            for file in files:
+                if file.lower().endswith(valid_extensions):
+                    if image_count >= self.max_images:
+                        break  # Stop once we have enough images
+                    self.images.append(os.path.join(subdir, file))
+                    self.labels.append(self.class_to_idx[class_name])
+                    image_count += 1
+
+            if image_count >= self.max_images:
+                break  # Stop traversing if we reached the image limit
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        img_name = self.images[idx]
+        label = self.labels[idx]
+        
+        image = Image.open(img_name).convert('RGB')
+        
+        if self.transform:
+            image = self.transform(image)
+        
+        return image, label
     
     
 def load_dataset(root_dir, image_size) -> any:

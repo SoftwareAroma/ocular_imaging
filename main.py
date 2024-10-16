@@ -14,6 +14,7 @@ from src.networks import (
 )
 from src.utils import (
     FundusDataset, 
+    FundusDatasetOne, 
     load_dataset, 
     plot_losses, 
     plot_metrics, 
@@ -106,8 +107,9 @@ def train_or_test(options):
             transforms.Normalize([0.5], [0.5])
         ])
         print("Loading dataset...")
-        dataset = FundusDataset(options.root_dir, transform=transform)
-        print(f"Dataset loaded...")
+        dataset = FundusDatasetOne(options.root_dir, transform=transform)
+        print(f"Dataset loaded | Number of images loaded: {[len(dataset)]}")
+        
         dataloader = DataLoader(dataset, batch_size=options.batch_size, shuffle=True)
     else:
         print("Preparing model for testing")
@@ -180,21 +182,21 @@ def train_or_test(options):
                 d_losses.append(d_loss.item())
                 c_losses.append(c_loss.item())
                 
-            # Calculate metrics
-            inception_score, _ = calculate_inception_score(fake_images)
-            fid_value = calculate_fid(imgs, fake_images, options.batch_size)
-            inception_scores.append(inception_score)
-            fid_values.append(fid_value)
+            #  TODO: calculate metrics
+            # inception_score, _ = calculate_inception_score(fake_images)
+            # fid_value = calculate_fid(imgs, fake_images, options.batch_size)
+            # inception_scores.append(inception_score)
+            # fid_values.append(fid_value)
 
-            print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}, Inception Score: {inception_score}")
-            # print(f"Inception Score: {inception_score} FID: {fid_value}")
+            print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}")
+            # print(f"Inception Score: {inception_score} FID: {fid_value}") # Inception Score: {inception_score}
             # create the checkpoint directory if it does not exist
             if not os.path.exists(options.checkpoint_dir):
                 os.makedirs(options.checkpoint_dir)
             # TODO: uncomment the following lines before training if you want to save the model checkpoints
-            # if epoch % 100 == 0:
-            #     checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
-            #     gan_model.save_checkpoint(checkpoint_path)
+            if epoch % 500 == 0:
+                checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
+                gan_model.save_checkpoint(checkpoint_path)
         #TODO: uncomment the following lines before training if you want to save the model
         # #Save the model after training
         if not os.path.exists(options.output_path):
@@ -216,18 +218,18 @@ def train_or_test(options):
                     d_losses.append(d_loss.item())
                     c_losses.append(c_loss.item())
                     
-                # Calculate metrics
-                inception_score, _ = calculate_inception_score(fake_images)
+                # TODO: Calculate metrics
+                # inception_score, _ = calculate_inception_score(fake_images)
                 # fid_value = calculate_fid(imgs, fake_images, options.batch_size)
-                inception_scores.append(inception_score)
+                # inception_scores.append(inception_score)
                 # fid_values.append(fid_value)
 
-                print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}, Inception Score: {inception_score}")
-                # print(f"Inception Score: {inception_score} FID: {fid_value}")
+                print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}")
+                # print(f"Inception Score: {inception_score}, FID: {fid_value}")
                 # TODO: uncomment the following lines before training if you want to save the model checkpoints
-                # if epoch % 100 == 0:
-                #     checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
-                #     gan_model.save_checkpoint(checkpoint_path)
+                if epoch % 500 == 0:
+                    checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
+                    gan_model.save_checkpoint(checkpoint_path)
     else:
         print("loading model...")
         gan_model.load_model(os.path.join(options.output_path, options.model_path))
