@@ -194,7 +194,7 @@ def train_or_test(options):
             if not os.path.exists(options.checkpoint_dir):
                 os.makedirs(options.checkpoint_dir)
             # TODO: uncomment the following lines before training if you want to save the model checkpoints
-            if epoch % 500 == 0:
+            if epoch % 200 == 0:
                 checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
                 gan_model.save_checkpoint(checkpoint_path)
         #TODO: uncomment the following lines before training if you want to save the model
@@ -227,7 +227,7 @@ def train_or_test(options):
                 print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}")
                 # print(f"Inception Score: {inception_score}, FID: {fid_value}")
                 # TODO: uncomment the following lines before training if you want to save the model checkpoints
-                if epoch % 500 == 0:
+                if epoch % 200 == 0:
                     checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
                     gan_model.save_checkpoint(checkpoint_path)
     else:
