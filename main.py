@@ -187,6 +187,9 @@ def train_or_test(options):
             # fid_value = calculate_fid(imgs, fake_images, options.batch_size)
             # inception_scores.append(inception_score)
             # fid_values.append(fid_value)
+            
+            if not os.path.exists(f'{options.checkpoint_dir}/trainining_samples'):
+                os.makedirs(f'{options.checkpoint_dir}/trainining_samples')
 
             print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}")
             # print(f"Inception Score: {inception_score} FID: {fid_value}") # Inception Score: {inception_score}
@@ -194,7 +197,7 @@ def train_or_test(options):
             if not os.path.exists(options.checkpoint_dir):
                 os.makedirs(options.checkpoint_dir)
             # TODO: uncomment the following lines before training if you want to save the model checkpoints
-            if epoch % 200 == 0:
+            if epoch % 500 == 0:
                 checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
                 gan_model.save_checkpoint(checkpoint_path)
         #TODO: uncomment the following lines before training if you want to save the model
@@ -227,9 +230,10 @@ def train_or_test(options):
                 print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: {d_loss.item():.4f}, g_loss: {g_loss.item():.4f}, c_loss: {c_loss.item():.4f}")
                 # print(f"Inception Score: {inception_score}, FID: {fid_value}")
                 # TODO: uncomment the following lines before training if you want to save the model checkpoints
-                if epoch % 200 == 0:
+                if epoch % 500 == 0:
                     checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
                     gan_model.save_checkpoint(checkpoint_path)
+                    save_images(images, f'{options.checkpoint_dir}/trainining_samples')
     else:
         print("loading model...")
         gan_model.load_model(os.path.join(options.output_path, options.model_path))
