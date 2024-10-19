@@ -36,6 +36,10 @@ df = pd.read_csv("kaggle_fundus_datasets.txt", sep="/", header=None, names=["use
 ### Directory to save the datasets
 download_path = '/mnt/data/RiskIntel/ocular_imaging/datasets'
 
+# if download path doesnt exist, thow an a folder not found error
+if not os.path.exists(download_path):
+    raise FileNotFoundError(f"Download path not found: {download_path}")
+
 ### Loop through each dataset reference and download it if not already downloaded
 for index, row in df.iterrows():
     dataset_ref = row['user_id'] + '/' + row['dataset_name']
