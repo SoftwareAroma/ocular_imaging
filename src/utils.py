@@ -14,7 +14,8 @@ def get_last_checkpoint(directory):
     # Filter out the checkpoint files and extract their epoch numbers
     checkpoint_files = []
     for file in files:
-        match = re.match(r'checkpoint_(\d+)\.pth', file)
+        # match = re.match(r'checkpoint_(\d+)\.pth', file) # if using epoch number in the checkpoint file name
+        match = re.match(r'checkpoint_latest.pth', file)
         if match:
             epoch = int(match.group(1))
             checkpoint_files.append((epoch, file))

@@ -198,7 +198,7 @@ def train_or_test(options):
                 os.makedirs(options.checkpoint_dir)
             # TODO: uncomment the following lines before training if you want to save the model checkpoints
             if epoch % 100 == 0:
-                checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
+                checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_latest.pth')
                 gan_model.save_checkpoint(checkpoint_path)
                 save_images(fake_images, f'{options.checkpoint_dir}/trainining_samples')
         #TODO: uncomment the following lines before training if you want to save the model
@@ -232,7 +232,7 @@ def train_or_test(options):
                 # print(f"Inception Score: {inception_score}, FID: {fid_value}")
                 # TODO: uncomment the following lines before training if you want to save the model checkpoints
                 if epoch % 100 == 0:
-                    checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_{epoch+1}.pth')
+                    checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_latest.pth')
                     gan_model.save_checkpoint(checkpoint_path)
                     save_images(fake_images, f'{options.checkpoint_dir}/trainining_samples')
     else:
