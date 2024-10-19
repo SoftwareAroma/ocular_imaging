@@ -1,4 +1,5 @@
 venv/
+.venv/
 checkpoints/
 datasets/
 pre-trained/
