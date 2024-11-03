@@ -28,6 +28,8 @@ class TripleGAN(nn.Module):
             f"cuda:{self.options.gpu_ids[0]}" if torch.cuda.is_available() and self.options.gpu_ids != '-1' else 'cpu'
         )
         
+        print("Model set to use device: ", self.device)
+        
         # Move networks to the selected device
         self.generator = generator.to(self.device)
         self.discriminator = discriminator.to(self.device)

@@ -112,7 +112,7 @@ def parse_args():
     parser.add_argument(
         '--gpu_ids',
         type=str,
-        default='-1',
+        default='0',
         help='gpu ids: e.g. 0 -> for one GPU  0,1,2, -> for multiple GPUs, -1 -> for CPU'
     )
     args = parser.parse_args()
