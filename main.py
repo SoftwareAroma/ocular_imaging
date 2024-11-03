@@ -202,7 +202,14 @@ def train_or_test(options):
             if epoch % 100 == 0:
                 checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_latest.pth')
                 gan_model.save_checkpoint(checkpoint_path)
+<<<<<<< HEAD
                 # save_images(fake_images, f'{options.checkpoint_dir}/trainining_samples')
+=======
+                try:
+                    save_images(fake_images, f'{options.checkpoint_dir}/trainining_samples')
+                except:
+                    pass
+>>>>>>> 8a1e3bc56f3e338996f831667c7013bdfe6428cc
         #TODO: uncomment the following lines before training if you want to save the model
         # #Save the model after training
         if not os.path.exists(options.output_path):
@@ -236,7 +243,14 @@ def train_or_test(options):
                 if epoch % 100 == 0:
                     checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_latest.pth')
                     gan_model.save_checkpoint(checkpoint_path)
+<<<<<<< HEAD
                     # save_images(fake_images, f'{options.checkpoint_dir}/trainining_samples')
+=======
+                    try:
+                        save_images(fake_images, f'{options.checkpoint_dir}/trainining_samples')
+                    except:
+                        pass
+>>>>>>> 8a1e3bc56f3e338996f831667c7013bdfe6428cc
     else:
         print("loading model...")
         gan_model.load_model(os.path.join(options.output_path, options.model_path))

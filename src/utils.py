@@ -40,7 +40,7 @@ def show_generated_images(images, n_images=8):
     plt.show()
     
 
-def save_images(images, output_path, n_images):
+def save_images(images, output_path, n_images=8):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
     for i in range(n_images):
