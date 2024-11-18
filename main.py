@@ -183,16 +183,16 @@ def train_or_test(options):
                 c_losses.append(c_loss.item())
                 
             #  TODO: calculate metrics
-            inception_score, _ = calculate_inception_score(fake_images)
-            fid_value = calculate_fid(imgs, fake_images, options.batch_size)
-            inception_scores.append(inception_score)
-            fid_values.append(fid_value)
+            # inception_score, _ = calculate_inception_score(fake_images)
+            # fid_value = calculate_fid(imgs, fake_images, options.batch_size)
+            # inception_scores.append(inception_score)
+            # fid_values.append(fid_value)
             
             if not os.path.exists(f'{options.checkpoint_dir}/trainining_samples'):
                 os.makedirs(f'{options.checkpoint_dir}/trainining_samples')
 
             print(f"Epoch [{epoch+1}/{options.num_epochs}], [d_loss: {d_loss.item():.4f}], g_loss: [{g_loss.item():.4f}], c_loss: [{c_loss.item():.4f}]")
-            print(f"Inception Score: {inception_score} FID: {fid_value}") # Inception Score: {inception_score}
+            # print(f"Inception Score: {inception_score} FID: {fid_value}") # Inception Score: {inception_score}
             # create the checkpoint directory if it does not exist
             if not os.path.exists(options.checkpoint_dir):
                 os.makedirs(options.checkpoint_dir)
@@ -227,13 +227,13 @@ def train_or_test(options):
                     c_losses.append(c_loss.item())
                     
                 # TODO: Calculate metrics
-                inception_score, _ = calculate_inception_score(fake_images)
-                fid_value = calculate_fid(imgs, fake_images, options.batch_size)
-                inception_scores.append(inception_score)
-                fid_values.append(fid_value)
+                # inception_score, _ = calculate_inception_score(fake_images)
+                # fid_value = calculate_fid(imgs, fake_images, options.batch_size)
+                # inception_scores.append(inception_score)
+                # fid_values.append(fid_value)
 
                 print(f"Epoch [{epoch+1}/{options.num_epochs}], d_loss: [{d_loss.item():.4f}], g_loss: [{g_loss.item():.4f}], c_loss: [{c_loss.item():.4f}]")
-                print(f"Inception Score: {inception_score}, FID: {fid_value}")
+                # print(f"Inception Score: {inception_score}, FID: {fid_value}")
                 # TODO: uncomment the following lines before training if you want to save the model checkpoints
                 if epoch % 100 == 0:
                     checkpoint_path = os.path.join(options.checkpoint_dir, f'checkpoint_latest.pth')
