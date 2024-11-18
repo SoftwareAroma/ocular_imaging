@@ -40,8 +40,6 @@ warnings.filterwarnings("ignore")
 os.environ['TORCH_HOME'] = './pre-trained/' #setting the environment variable
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-print(f"Using device: {device}")
     
 inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
 inception_model.eval()
@@ -128,22 +126,21 @@ def train_or_test(options):
         num_classes=options.num_classes
     )
     
-    print("Creating netowrk")
     generator = Generator(
         input_dim=options.latent_dim, 
         layers=gen_layers
-    )
+    ).to(device)
     discriminator = Discriminator(
         layers=disc_layers
-    )
+    ).to(device)
     classifier = Classifier(
         num_classes=options.num_classes, 
         layers=classifier_layers
-    )
+    ).to(device)
 
     optimizer_G = torch.optim.Adam(
         generator.parameters(), 
-        lr=options.lr_G, 
+        lr=options.lr_G,
         betas=options.beta_G
     )
     optimizer_D = torch.optim.Adam(
@@ -156,10 +153,6 @@ def train_or_test(options):
         lr=options.lr_C, 
         betas=options.beta_C
     )
-    
-    device_ = torch.device(
-            f"cuda:{options.gpu_ids[0]}" if (torch.cuda.is_available() and (options.gpu_ids != '-1')) else 'cpu'
-        )
 
     gan_model = TripleGAN(
         generator=generator,
@@ -169,8 +162,9 @@ def train_or_test(options):
         optimizer_D=optimizer_D,
         optimizer_C=optimizer_C,
         options=options,
-        latent_dim=options.latent_dim
-    ).to(device=device)
+        latent_dim=options.latent_dim,
+        device=device
+    )
     
     
     g_losses = []

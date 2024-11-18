@@ -23,10 +23,10 @@ class TripleGAN(nn.Module):
         
         if device is not None:
             self.device = device
-            
-        self.device = torch.device(
-            f"cuda:{self.options.gpu_ids[0]}" if torch.cuda.is_available() and self.options.gpu_ids != '-1' else 'cpu'
-        )
+        else:
+            self.device = torch.device(
+                f"cuda:{self.options.gpu_ids[0]}" if torch.cuda.is_available() and self.options.gpu_ids != '-1' else 'cpu'
+            )
         
         print("Model set to use device: ", self.device)
         
