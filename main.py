@@ -156,6 +156,10 @@ def train_or_test(options):
         lr=options.lr_C, 
         betas=options.beta_C
     )
+    
+    device_ = torch.device(
+            f"cuda:{options.gpu_ids[0]}" if (torch.cuda.is_available() and (options.gpu_ids != '-1')) else 'cpu'
+        )
 
     gan_model = TripleGAN(
         generator=generator,
@@ -166,7 +170,7 @@ def train_or_test(options):
         optimizer_C=optimizer_C,
         options=options,
         latent_dim=options.latent_dim
-    )
+    ).to(device=device)
     
     
     g_losses = []
@@ -179,7 +183,7 @@ def train_or_test(options):
         print("Starting training...")
         for epoch in range(options.num_epochs):
             for i, (imgs, labels) in enumerate(dataloader):
-                d_loss, g_loss, c_loss, fake_images = gan_model.train_step(imgs, labels)
+                d_loss, g_loss, c_loss, fake_images = gan_model.train_step(imgs.to(device), labels.to(device))
                 g_losses.append(g_loss.item())
                 d_losses.append(d_loss.item())
                 c_losses.append(c_loss.item())
@@ -223,7 +227,7 @@ def train_or_test(options):
             # Continue training from the last epoch
             for epoch in range(last_epoch, options.num_epochs):
                 for i, (imgs, labels) in enumerate(dataloader):
-                    d_loss, g_loss, c_loss, fake_images = gan_model.train_step(imgs, labels)
+                    d_loss, g_loss, c_loss, fake_images = gan_model.train_step(imgs.to(device), labels.to(device))
                     g_losses.append(g_loss.item())
                     d_losses.append(d_loss.item())
                     c_losses.append(c_loss.item())

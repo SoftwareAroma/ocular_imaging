@@ -1,7 +1,7 @@
 set -ex
 # python3 main.py --root_dir ./datasets/fundusimage1000/1000images --train --num_epochs 1000
 # python3 main.py --root_dir /mnt/data/RiskIntel/ocular_imaging/datasets/1000images/ --train --num_epochs 1000
-python main.py --root_dir /mnt/data/RiskIntel/ocular_imaging/datasets/ --train --num_epochs 1000
+python main.py --root_dir /mnt/data/RiskIntel/ocular_imaging/datasets/ --train --num_epochs 500
 
 # --continue_training #  - to continue training from a checkpoint
 # --train #start training from groud up
