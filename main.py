@@ -32,12 +32,15 @@ from pytorch_fid import fid_score
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.utils import save_image
-
+from PIL import ImageFile
 
 
 warnings.filterwarnings("ignore")
 
 os.environ['TORCH_HOME'] = './pre-trained/' #setting the environment variable
+
+# Allow truncated images to load
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     

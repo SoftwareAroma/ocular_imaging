@@ -4,8 +4,11 @@ import torch
 from torch.utils.data import TensorDataset
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFile
 from torch.utils.data import Dataset
+
+# Allow truncated images to load
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 def get_last_checkpoint(directory):
@@ -89,12 +92,59 @@ class FundusDataset(Dataset):
         return image, label  # Return both the image and label
     
 
+# class FundusDatasetOne(Dataset):
+#     def __init__(self, root_dir, transform=None, max_images=40000):
+#         self.root_dir = root_dir
+#         self.transform = transform
+#         self.max_images = max_images
+        
+#         # Store image paths and corresponding labels
+#         self.images = []
+#         self.labels = []
+#         self.class_to_idx = {}  # Dictionary to map folder names to numerical labels
+
+#         # List of possible image file extensions
+#         valid_extensions = ('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.webp')
+
+#         # Traverse the root directory and subdirectories
+#         image_count = 0
+#         for subdir, _, files in os.walk(root_dir):
+#             class_name = os.path.basename(subdir)
+#             if class_name not in self.class_to_idx and len(files) > 0:
+#                 self.class_to_idx[class_name] = len(self.class_to_idx)
+            
+#             for file in files:
+#                 if file.lower().endswith(valid_extensions):
+#                     if image_count >= self.max_images:
+#                         break  # Stop once we have enough images
+#                     self.images.append(os.path.join(subdir, file))
+#                     self.labels.append(self.class_to_idx[class_name])
+#                     image_count += 1
+
+#             if image_count >= self.max_images:
+#                 break  # Stop traversing if we reached the image limit
+
+#     def __len__(self):
+#         return len(self.images)
+
+#     def __getitem__(self, idx):
+#         img_name = self.images[idx]
+#         label = self.labels[idx]
+        
+#         image = Image.open(img_name).convert('RGB')
+        
+#         if self.transform:
+#             image = self.transform(image)
+        
+#         return image, label
+    
+    
 class FundusDatasetOne(Dataset):
     def __init__(self, root_dir, transform=None, max_images=40000):
         self.root_dir = root_dir
         self.transform = transform
         self.max_images = max_images
-        
+
         # Store image paths and corresponding labels
         self.images = []
         self.labels = []
@@ -109,15 +159,22 @@ class FundusDatasetOne(Dataset):
             class_name = os.path.basename(subdir)
             if class_name not in self.class_to_idx and len(files) > 0:
                 self.class_to_idx[class_name] = len(self.class_to_idx)
-            
             for file in files:
                 if file.lower().endswith(valid_extensions):
                     if image_count >= self.max_images:
                         break  # Stop once we have enough images
-                    self.images.append(os.path.join(subdir, file))
-                    self.labels.append(self.class_to_idx[class_name])
-                    image_count += 1
-
+                    img_path = os.path.join(subdir, file)
+                    
+                    # Preemptively check if the image is valid
+                    try:
+                        with Image.open(img_path) as img:
+                            img.verify()  # Verify that it is a valid image
+                        self.images.append(img_path)
+                        self.labels.append(self.class_to_idx[class_name])
+                        image_count += 1
+                    except Exception as e:
+                        print(f"Skipping corrupted file during initialization: {img_path} | Error: {e}")
+            
             if image_count >= self.max_images:
                 break  # Stop traversing if we reached the image limit
 
@@ -127,14 +184,17 @@ class FundusDatasetOne(Dataset):
     def __getitem__(self, idx):
         img_name = self.images[idx]
         label = self.labels[idx]
-        
-        image = Image.open(img_name).convert('RGB')
-        
+        try:
+            image = Image.open(img_name).convert('RGB')
+        except Exception as e:
+            print(f"Skipping corrupted file during loading: {img_name} | Error: {e}")
+            # Fallback: Replace with a default image or choose another random index
+            fallback_idx = (idx + 1) % len(self.images)
+            return self.__getitem__(fallback_idx)
         if self.transform:
             image = self.transform(image)
-        
         return image, label
-    
+
     
 def load_dataset(root_dir, image_size) -> any:
     images = []
