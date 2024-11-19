@@ -113,7 +113,12 @@ def train_or_test(options):
         dataset = FundusDatasetOne(options.root_dir, transform=transform)
         print(f"Dataset loaded | Number of images loaded: {[len(dataset)]}")
         
-        dataloader = DataLoader(dataset, batch_size=options.batch_size, shuffle=True)
+        dataloader = DataLoader(
+            dataset, 
+            batch_size=options.batch_size, 
+            num_workers=options.num_workers, 
+            shuffle=True
+        )
     else:
         print("Preparing model for testing")
 

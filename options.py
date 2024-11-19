@@ -32,6 +32,12 @@ def parse_args():
         help='Number of images to generate during testing'
     )
     parser.add_argument(
+        '--num_workers',
+        type=int,
+        default=0,
+        help='Number of workers for dataloader'
+    )
+    parser.add_argument(
         '--output_path',
         type=str,
         default='output',
