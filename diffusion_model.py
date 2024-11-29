@@ -1,12 +1,14 @@
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from diffusers import DDPMPipeline, DDPMScheduler, UNet2DModel
 from PIL import Image
 from torchmetrics.image.fid import FrechetInceptionDistance
 from skimage.metrics import structural_similarity as ssim
 import os
+import random
+from torch.utils.data import Dataset, DataLoader
+import torch
 
 os.environ['TORCH_HOME'] = './pre-trained/'  # Set the environment variable
 
@@ -33,6 +35,60 @@ class DDPMFundusTrainer:
         # Initialize optimizer and FID metric
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
         self.fid = FrechetInceptionDistance().to(self.device)
+        
+        
+class LimitedImageFolderDataset(Dataset):
+    def __init__(self, root, transform=None, max_images=40000):
+        self.transform = transform
+        self.max_images = max_images
+
+        # Gather all image file paths from subdirectories
+        self.image_paths = []
+        for subdir, _, files in os.walk(root):
+            for file in files:
+                if file.lower().endswith(('png', 'jpg', 'jpeg', 'bmp', 'tiff')):
+                    self.image_paths.append(os.path.join(subdir, file))
+
+        # Limit to the maximum number of images
+        if len(self.image_paths) > self.max_images:
+            self.image_paths = random.sample(self.image_paths, self.max_images)
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        image_path = self.image_paths[idx]
+        image = datasets.folder.default_loader(image_path)  # Load image
+        if self.transform:
+            image = self.transform(image)
+        return image
+
+
+class DDPMFundusTrainerOne:
+    def __init__(self, data_dir, batch_size=8, lr=1e-4, epochs=10, device=None, max_images=40000):
+        self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.data_dir = data_dir
+        self.batch_size = batch_size
+        self.lr = lr
+        self.epochs = epochs
+
+        # Initialize dataset and dataloader
+        transform = transforms.Compose([
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+        ])
+        dataset = LimitedImageFolderDataset(root=data_dir, transform=transform, max_images=max_images)
+        self.dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+        # Load pre-trained DDPM model and scheduler
+        self.model = UNet2DModel.from_pretrained("google/ddpm-cifar10-32").to(self.device)
+        self.scheduler = DDPMScheduler.from_pretrained("google/ddpm-cifar10-32")
+
+        # Initialize optimizer and FID metric
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
+        self.fid = FrechetInceptionDistance().to(self.device)
+        
+
 
     def train(self):
         for epoch in range(self.epochs):
@@ -117,15 +173,16 @@ class DDPMFundusTrainer:
 
 
 if __name__ == "__main__":
-    trainer = DDPMFundusTrainer(data_dir="./datasets/fundusimage1000/1000images")
+    trainer = DDPMFundusTrainerOne(data_dir="/mnt/data/RiskIntel/ocular_imaging/datasets")
+    # trainer = DDPMFundusTrainer(data_dir="/mnt/data/RiskIntel/ocular_imaging/datasets/1000images")
     trainer.train()
     trainer.save_model()
     trainer.load_model()
     trainer.inference()
 
-# Example usage:
-trainer = DDPMFundusTrainer(data_dir="./datasets/fundusimage1000/1000images")
-trainer.train()
-trainer.save_model()
-trainer.load_model()
-trainer.inference()
+# # Example usage:
+# trainer = DDPMFundusTrainer(data_dir="./datasets/fundusimage1000/1000images")
+# trainer.train()
+# trainer.save_model()
+# trainer.load_model()
+# trainer.inference()
